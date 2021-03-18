@@ -1,0 +1,7 @@
+[mysql]
+dbname  = "myblog"
+host    = "localhost"
+port    = 3306
+user    = "my_blog_id"
+pass    = "my_blog_id"
+sslmode = "false"

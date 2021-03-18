@@ -1,0 +1,362 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>記事管理リスト</title>
+    <link rel="stylesheet" type="text/css" href="css/common.css"/>
+    <link rel="stylesheet" type="text/css" href="css/main.css"/>
+    <script src="https://unpkg.com/vue@next"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style lang="scss">
+
+.input{
+    display: none;
+    width: 700px;
+    height: 500px;
+    margin: 0;
+    padding: 0;
+    left:25%; 
+     top:10%; 
+    background-color: #ffffff;
+    color: #666666;
+    position:fixed;
+    border-style: solid;
+    z-index: 99;
+    overflow:auto;
+    }
+    .input2{
+        display: none;
+        width:100%;
+        height:100%;
+        background-color: rgba(0,0,0,0.5);
+        position:fixed;
+        top:0;
+        left:0;
+        z-index: 1;
+    }
+    </style>
+</head>
+<body>
+<div  class='input2' id="backLayer"></div>  
+<div  class='input' id="dialogLayer" ></div>  
+<div id="smallSelect-vue">
+    <teleport to="#dialogLayer">
+        <div id="content">
+            
+            <p style="text-align: right;"> 
+                <button  class="btn btn-primary btn2"   v-if="showType==2"  v-on:click="doSave">登録</button>&nbsp;
+                <button  class="btn btn-primary btn2"   v-if="showType==3"  v-on:click="doUpdate">更新</button>&nbsp;
+                <button  class="btn btn-primary btn2" v-on:click="closeDialog">閉じる</button>&nbsp;
+            </p>
+            <table class="insert-tab" width="100%" v-if="showType==1" >
+                <tbody>
+
+                    <tr>
+                        <th width="20%" ><i class="require-red">*</i>タイトル：</th>
+                        <td>
+                            ${titleEdit}
+                        </td>
+                    </tr>
+                    <tr>
+                       
+                        <td colspan="2" style="line-height: 20px;">
+                            <span v-html="showContent"></span>
+                         
+                       
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table class="insert-tab" width="100%" v-if="showType==2 || showType==3 " >
+                <tbody>
+
+                    <tr>
+                        <th width="20%" ><i class="require-red">*</i>タイトル：</th>
+                        <td>
+                            <input class="common-text required"  type="text" v-model="titleEdit" >
+                        </td>
+                    </tr>
+                    <tr>
+                       
+                        <td colspan="2">
+                            <textarea  id="contentEdit"  class="common-textarea"  cols="30" style="width: 98%;" rows="20"  v-html="showContent" >
+                            
+                            </textarea>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+
+
+        </div>
+    </teleport>
+  
+
+<div class="topbar-wrap white">
+    <div class="topbar-inner clearfix">
+        <div class="topbar-logo-wrap clearfix">
+            <h1 class="topbar-logo none"><a href="index.html" class="navbar-brand">記事管理リスト</a></h1>
+            <ul class="navbar-list clearfix">
+                <li><a class="on" href="#"></a></li>
+                <li><a href="#" target="_blank"></a></li>
+            </ul>
+        </div>
+        <div class="top-info-wrap">
+            <ul class="top-info-list clearfix">
+                <li><a href="#"></a></li>
+                <li><a href="#"></a></li>
+                <li><a href="#" v-on:click= "doLogout" >ログアウト</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="main-wrap" >
+    <h1 style="color: red;" v-html="message" ></h1>
+    <div class="result-wrap">
+        <div class="result-title">
+            <div class="result-list">
+            </div>
+        </div>
+     
+        <div class="result-content">
+            <button  class="btn btn-primary btn2" v-on:click="showDialog('2','','','')" >新規</button>&nbsp;
+            <button  class="btn btn-primary btn2" v-on:click="goBack()" >戻る</button>    
+            <br>
+            <br>
+            <table class="result-tab" width="100%">
+                <tr>
+                    <th width="80%">タイトル</th>
+
+                    <th width="20%"> 操作</th>
+                </tr>
+                <tr v-for="smallblog in smallblogs" >
+                    <td><a href="#" v-on:click="showDialog('1',smallblog.title,smallblog.content,smallblog.id)">${smallblog.title}</a></td>
+                    <td> 
+                        <a class="link-update" href="#" v-on:click="showDialog('3',smallblog.title,smallblog.content,smallblog.id)" >修正</a>&nbsp;
+                        <a class="link-update" href="#" v-on:click="doDelete(smallblog.id)" >削除</a>
+                    </td> 
+                </tr>
+               
+            </table>
+            <div class="list-page">
+
+                <button  v-if="currentPage > 1" v-on:click="smallSelect('2')" >前ページ</button>
+                   
+                       
+                <button  v-else disabled="true">前ページ</button>
+    
+            
+                ${sumCount} 条 ${currentPage}/${pageCount} 页
+          
+ 
+                <button v-if="currentPage == pageCount" disabled="true">次ページ</button>
+     
+      
+                <button   v-else  v-on:click="smallSelect('3')" >次ページ</button>
+                   
+          
+            </div>
+        </div>
+     </div>
+</div>
+
+    <!--/main-->
+</div>
+<script>
+    function doSearch(searchType){
+
+    }
+
+
+    const  smallSelectApp = {
+        delimiters: ['${', '}'],
+        data() {
+            return {
+                selectID: '{{.selectID}}',
+                sumCount:0,
+                pageCount: 0,
+                currentPage:0,
+                smallblogs:[],
+                message:'',
+                titleEdit:'',
+                contentEdit:'',
+                showContent:'',
+                idEdit:'',
+                showType:'',
+            }
+        },
+        created() {
+            this.smallSelect("1")
+        },
+        methods: {
+            smallSelect(searchType) {
+                axios({  
+                    method:'post',  
+                    url:'/menu/smallSelect',  
+                    data:{selectID:this.selectID,currentPage:this.currentPage,searchType:searchType},  
+                    headers:{'Content-Type': 'application/x-www-form-urlencoded'},  
+                    transformRequest: function(obj) {  
+                     var str = [];  
+                    for(var p in obj){  
+                    str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));  
+                    }  
+                    return str.join("&");  
+                    } }).then((res)=>{
+                        if(res.data.result=="ok"){
+                            this.smallblogs = JSON.parse(res.data.smallblogs)
+                            this.currentPage = res.data.currentPage
+                            this.pageCount = res.data.pageCount
+                            this.sumCount = res.data.sumCount
+                            this.message = ""
+                        }else if (res.data.result=="fail"){
+                            this.message = res.data.msg
+                        }
+                    });
+            },
+            goBack:function(){
+                window.location.href = "/indexInit"
+            },
+            closeDialog:function(){
+               document.getElementById("dialogLayer").style.display = "none"
+               document.getElementById("backLayer").style.display = "none"
+            },
+            
+            showDialog: function(showType,title,content,id) {
+                var showContent 
+              
+                this.showType =showType
+                this.titleEdit = title
+                // 修正の場合、html文に変換する
+                if(showType == 3){
+                    showContent = content.replace(/&XF/g, '\n')
+                //レビューの場合
+                }else if(showType == 1){
+                    showContent = content.replace(/&XF/g, '<br>')
+                }else{
+                    showContent = ""
+                }
+
+
+                this.showContent = showContent
+                this.idEdit = id
+
+
+                document.getElementById("dialogLayer").style.display = "block"
+                document.getElementById("backLayer").style.display = "block"
+             },
+             doSave:function(){
+               if(this.titleEdit == ""||this.titleEdit==undefined){
+                    alert("タイトルを入力してください")
+                    return
+               }
+
+               this.contentEdit = document.getElementById("contentEdit").value
+               contentTxt = this.contentEdit.replace(/\r\n/g, '&XF')
+                                            .replace(/\n/g, '&XF')
+                                            .replace(/\s/g, '&nbsp')
+                                            .replace(/</g, "&lt")
+                                            .replace(/>/g, "&gt")
+                                            .replace(/\//g, "&#47")
+                                            .replace(/\\/g,"&#92")
+
+
+                axios({  
+                    method:'post',  
+                    url:'/menu/doSave',  
+                    data:{selectID:this.selectID,titleEdit:this.titleEdit,contentEdit:contentTxt},  
+                    headers:{'Content-Type': 'application/x-www-form-urlencoded'},  
+                    transformRequest: function(obj) {  
+                     var str = [];  
+                    for(var p in obj){  
+                    str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));  
+                    }  
+                    return str.join("&");  
+                    } }).then((res)=>{
+                        if(res.data.result=="ok"){
+                            alert("正常に登録しました")
+                            document.getElementById("dialogLayer").style.display = "none"
+                            document.getElementById("backLayer").style.display = "none"
+                            this.smallSelect("1")
+                        }else if (res.data.result=="fail"){
+                            // this.message = res.data.msg
+                            alert("エラになった")
+                        }
+                    });
+
+             },
+             doUpdate:function (){
+               if(this.titleEdit == ""||this.titleEdit==undefined){
+                    alert("タイトルを入力してください")
+                    return
+               }
+               this.contentEdit = document.getElementById("contentEdit").value
+               contentTxt = this.contentEdit.replace(/\r\n/g, '&XF')
+                                            .replace(/\n/g, '&XF')
+                                            .replace(/\s/g, '&nbsp')
+                                            .replace(/</g, "&lt")
+                                            .replace(/>/g, "&gt")
+                                            .replace(/\//g, "&#47")
+                                            .replace(/\\/g,"&#92")
+                axios({  
+                    method:'post',  
+                    url:'/menu/doUpdate',  
+                    data:{idEdit:this.idEdit,titleEdit:this.titleEdit,contentEdit:contentTxt},  
+                    headers:{'Content-Type': 'application/x-www-form-urlencoded'},  
+                    transformRequest: function(obj) {  
+                     var str = [];  
+                    for(var p in obj){  
+                    str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));  
+                    }  
+                    return str.join("&");  
+                    } }).then((res)=>{
+                        if(res.data.result=="ok"){
+                            alert("正常に更新しました")
+                            document.getElementById("dialogLayer").style.display = "none"
+                            document.getElementById("backLayer").style.display = "none"
+                            this.smallSelect("1")
+                        }else if (res.data.result=="fail"){
+                            alert("エラになった")
+                        }
+                    });
+            },
+
+            doDelete:function(deleteId){
+
+                if(confirm("削除ご確認ください")){
+                    axios({  
+                    method:'post',  
+                    url:'/menu/doDelete',  
+                    data:{deleteId:deleteId},  
+                    headers:{'Content-Type': 'application/x-www-form-urlencoded'},  
+                    transformRequest: function(obj) {  
+                     var str = [];  
+                    for(var p in obj){  
+                    str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));  
+                    }  
+                    return str.join("&");  
+                    } }).then((res)=>{
+                        if(res.data.result=="ok"){
+                            alert("正常に削除されました")
+                            this.smallSelect("1")
+                        }else if (res.data.result=="fail"){
+                            alert("エラになった")
+                        }
+                    });
+
+                }
+
+            },
+            doLogout(){
+                if(confirm("ログアウトご確認ください")){
+                    window.location.href = "/doLogout"
+                }
+            }
+        }
+    }
+    Vue.createApp(smallSelectApp).mount('#smallSelect-vue')
+    </script>
+</body>
+</html>

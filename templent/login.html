@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>記事ログイン</title>
+	<link rel="stylesheet" type="text/css" href="css/admin_login.css"/>
+    <script src="https://unpkg.com/vue@next"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<div class="admin_login_wrap">
+    <h1>記事ログイン</h1>
+    <div id="login-vue" class="adming_login_border">
+        <h1 style="color: red;" v-html="message" ></h1>
+      
+        <div class="admin_input">
+        
+                <ul class="admin_items">
+                    <li>
+                        <label for="user">ユーザ：</label>
+                        <input type="text" size="35" class="admin_input_style"  v-model="username"  />
+                    </li>
+                    <li>
+                        <label for="pwd">パスワード：</label>
+                        <input type="password"  size="35" class="admin_input_style"   v-model="pwd" />
+                    </li>
+                    <li>
+                    
+                        <button class="btn btn-primary" v-on:click="dologin">ログイン</button>
+                    </li>
+                </ul>
+ 
+        </div>
+    </div>
+   </div>
+
+
+   <script>
+    const  LoginApp = {
+        data() {
+            return {
+                username: '',
+                pwd: '',
+                message: '',
+            }
+        },
+        methods: {
+            dologin() {
+                axios({  
+                    method:'post',  
+                    url:'/dologin',  
+                    data:{username:this.username,pwd:this.pwd},  
+                    headers:{'Content-Type': 'application/x-www-form-urlencoded'},  
+                    transformRequest: function(obj) {  
+                     var str = [];  
+                    for(var p in obj){  
+                    str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));  
+                    }  
+                    return str.join("&");  
+                    } }).then((res)=>{
+                        if(res.data.result=="ok"){
+                            window.location.href = "/indexInit"
+                        }else{
+                            this.message = res.data.msg
+                        }
+                    
+                    });
+            }
+        }
+    }
+    Vue.createApp(LoginApp).mount('#login-vue')
+    </script>
+
+</body>
+</html>

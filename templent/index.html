@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>記事管理リスト</title>
+    <link rel="stylesheet" type="text/css" href="css/common.css"/>
+    <link rel="stylesheet" type="text/css" href="css/main.css"/>
+    <script src="https://unpkg.com/vue@next"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<div id="index-vue">
+<div class="topbar-wrap white">
+    <div class="topbar-inner clearfix">
+        <div class="topbar-logo-wrap clearfix">
+            <h1 class="topbar-logo none"><a href="index.html" class="navbar-brand">記事管理リスト</a></h1>
+            <ul class="navbar-list clearfix">
+                <li><a class="on" href="#"></a></li>
+                <li><a href="#" target="_blank"></a></li>
+            </ul>
+        </div>
+        <div class="top-info-wrap">
+            <ul class="top-info-list clearfix">
+                <li><a href="#"></a></li>
+                <li><a href="#"></a></li>
+                <li><a href="#" v-on:click= "doLogout"  >ログアウト</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+    <!--/sidebar-->
+    <div class="main-wrap" >
+        <div class="search-wrap">
+            <div class="search-content">
+                
+                    <table class="search-tab">
+                        <tr>
+                            <th width="70">タイトル</th>
+                            <td><input class="common-text"  type="text" v-model="searchKey" ></td>
+
+                            <td> <button  class="btn btn-primary btn2" v-on:click="indexSearchList('1')">検索</button></td>
+
+                        </tr>
+                    </table>
+
+            </div>
+        </div>
+        <h1 style="color: red;" v-html="message" ></h1>
+        <div class="result-wrap">
+          
+                <div class="result-title">
+                    <div class="result-list">
+                    </div>
+                </div>
+                <div class="result-content">
+                    <table class="result-tab" width="100%">
+                
+                        <th width="100%">タイトル</th>
+  
+                        <tr v-for="mainblog in mainblogs">
+                            <td>   <a class="link-update" href="#" v-on:click="gotoSmallPage(mainblog.id)">${mainblog.title} </a></td>
+                        </tr>
+                       
+                    </table>
+                    <div class="list-page">
+                
+                            <button  v-if="currentPage > 1" v-on:click="indexSearchList('2')" >前ページ</button>
+                   
+                       
+                            <button  v-else disabled="true">前ページ</button>
+                
+                        
+                            ${sumCount} 条 ${currentPage}/${pageCount} 页
+                      
+             
+                            <button v-if="currentPage == pageCount" disabled="true">次ページ</button>
+                 
+                  
+                            <button   v-else  v-on:click="indexSearchList('3')" >次ページ</button>
+                  
+                    </div>
+                </div>
+
+        </div>
+    </div>
+    <!--/main-->
+</div>
+<script>
+    const  IndexApp = {
+        delimiters: ['${', '}'],
+        data() {
+            return {
+                searchKey: '',
+                sumCount:0,
+                pageCount: 0,
+                currentPage:0,
+                mainblogs:[],
+                message:'',
+
+            }
+        },
+        created() {
+            this.indexSearchList("1")
+        },
+        methods: {
+            indexSearchList(searchType) {
+                axios({  
+                    method:'post',  
+                    url:'/menu/indexSearchList',  
+                    data:{searchKey:this.searchKey,currentPage:this.currentPage,searchType:searchType},  
+                    headers:{'Content-Type': 'application/x-www-form-urlencoded'},  
+                    transformRequest: function(obj) {  
+                     var str = [];  
+                    for(var p in obj){  
+                    str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));  
+                    }  
+                    return str.join("&");  
+                    } }).then((res)=>{
+                        if(res.data.result=="ok"){
+                            this.mainblogs = JSON.parse(res.data.mainblogs)
+                            this.currentPage = res.data.currentPage
+                            this.pageCount = res.data.pageCount
+                            this.sumCount = res.data.sumCount
+                            this.message = ""
+                        }else if (res.data.result=="fail"){
+                            this.message = res.data.msg
+                            this.mainblogs = []
+                        }
+                    
+                    });
+            },
+            gotoSmallPage(id) {
+               window.location.href = "/menu/samllInit?selectID=" + id
+            },
+            doLogout(){
+                if(confirm("ログアウトご確認ください")){
+
+                    window.location.href = "/doLogout"
+
+
+                }
+            }   
+        }
+    }
+    Vue.createApp(IndexApp).mount('#index-vue')
+    </script>
+</body>
+</html>
